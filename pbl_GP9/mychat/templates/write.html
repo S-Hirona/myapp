@@ -4,14 +4,13 @@
 <meta charset="UTF-8">
 <title>新規投稿</title>
 <style>
-
 /* ==== ヘッダー ==== */
 .header {
     width: 100%;
     padding: 15px 20px;
     background: white;
     border-bottom: 1px solid #ddd;
-    display: flex;              /* 横並びにする */
+    display: flex;
     align-items: center;
     font-size: 28px;
     font-weight: 900;
@@ -20,12 +19,12 @@
     z-index: 10;
 }
 
-/* 戻るボタン（矢印のみ） */
+/* 戻るボタン */
 .back-btn {
     font-size: 28px;
     color: #3897f0;
     text-decoration: none;
-    margin-right: 15px;         /* 「新規投稿」との間に余白 */
+    margin-right: 15px;
     transition: all 0.2s ease;
 }
 .back-btn:active {
@@ -39,7 +38,7 @@ body {
     font-family: "Hiragino Kaku Gothic ProN","メイリオ",sans-serif;
 }
 
-/* 投稿カード全体 */
+/* 投稿カード */
 .post-card {
     background: #fff;
     border: 1px solid #dbdbdb;
@@ -68,7 +67,8 @@ body {
     flex: 1;
     display: flex;
     flex-direction: column;
-    align-items: center;
+    margin-left: 20px;
+    width: 100%;
 }
 
 /* 入力欄 */
@@ -93,23 +93,43 @@ input[type="file"] {
     margin-top: 10px;
 }
 
-/* プレビュー画像 */
-#preview {
+/* プレビュー画像コンテナ（ツイッター風） */
+#preview-container {
+    display: grid;
+    gap: 6px;
     margin-top: 15px;
-    max-width: 100%;
+}
+#preview-container img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
     border-radius: 8px;
-    display: none; /* 初期は非表示 */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
-/* 投稿ボタンを右下に配置 */
+/* グリッドレイアウト調整 */
+#preview-container.count-1 {
+    grid-template-columns: 1fr;
+}
+#preview-container.count-2 {
+    grid-template-columns: 1fr 1fr;
+}
+#preview-container.count-3,
+#preview-container.count-4 {
+    grid-template-columns: 1fr 1fr;
+}
+#preview-container.count-3 img:first-child {
+    grid-column: span 2;
+}
+
+/* 投稿ボタン */
 .button-container {
     display: flex;
-    justify-content: flex-end; /* 右ぞろえ */
+    justify-content: flex-end;
     margin-top: 20px;
 }
-
 button {
-    padding: 14px 28px;        /* 少し大きめ */
+    padding: 14px 28px;
     font-size: 18px;
     border: none;
     border-radius: 30px;
@@ -117,18 +137,15 @@ button {
     color: white;
     font-weight: bold;
     cursor: pointer;
-    transition: all 0.15s ease; /* アニメーションを滑らかに */
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2); /* 通常時の影 */
+    transition: all 0.15s ease;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
-
 button:hover {
     opacity: 0.9;
 }
-
-/* 押したときの沈み込みアニメーション */
 button:active {
-    transform: translateY(3px) scale(0.97); /* 下に沈む＋少し縮む */
-    box-shadow: 0 2px 3px rgba(0,0,0,0.2);  /* 影を弱める */
+    transform: translateY(3px) scale(0.97);
+    box-shadow: 0 2px 3px rgba(0,0,0,0.2);
 }
 </style>
 </head>
@@ -143,15 +160,14 @@ button:active {
     <div class="post-card">
         <form action="{% url 'mychat:result' %}" method="POST" enctype="multipart/form-data">
             {% csrf_token %}
-            
             <div class="form-container">
                 <!-- 左カラム -->
                 <div class="left-column">
-                    <p><B>店の名前（必須）</B><br>
+                    <p><b>店の名前（必須）</b><br>
                         <input type="text" id="shop_name" name="shop_name" autocomplete="off" required>
                         <div id="shop_suggestions"></div>
                     </p>
-                    <p><B>店のジャンル（必須）</B><br>
+                    <p><b>店のジャンル（必須）</b><br>
                         <input type="text" name="genre" id="genre" required>
                     </p>
                     <p><b>場所</b><br>
@@ -166,21 +182,22 @@ button:active {
                     <p><b>電話番号</b><br>
                         <input type="text" name="tel" id="tel">
                     </p>
-                    <p><B>感想</B><br>
+                    <p><b>感想</b><br>
                         <textarea name="menu" rows="6"></textarea>
                     </p>
                 </div>
 
                 <!-- 右カラム -->
                 <div class="right-column">
-                    <p><B>写真（必須）</B><br>
-                        <input type="file" name="photo" accept="image/*" required onchange="previewImage(event)">
-                        <img id="preview" alt="選択した画像のプレビュー">
+                    <p><b>写真（最大4枚）</b><br>
+                        {% comment %} <input type="file" name="photo[]" accept="image/*" multiple required onchange="previewImages(event)"> {% endcomment %}
+                        <input type="file" name="photo" accept="image/*" multiple required onchange="previewImages(event)">
+                        <div id="preview-container"></div>
                     </p>
                 </div>
             </div>
 
-            <!-- 投稿ボタンを右下に -->
+            <!-- 投稿ボタン -->
             <div class="button-container">
                 <button type="submit">投稿する</button>
             </div>
@@ -188,60 +205,62 @@ button:active {
     </div>
 
     <script>
-        //店の情報取得
+        // 店の情報取得
         const shops = {{ shops|safe }};
-        // 店名入力欄とサジェストボックスの取得
         const shopInput = document.getElementById('shop_name');
         const suggestionBox = document.getElementById("shop_suggestions");
 
-        // 店名入力時の処理(この中は入力中の処理)
         shopInput.addEventListener('input', function() {
-            // 入力値を取得
             const keyword = shopInput.value;
             suggestionBox.innerHTML = '';
+            if (keyword.length === 0) return;
 
-            if (keyword.length === 0) {
-                return; // 入力が空の場合は何もしない
-            }
-
-            // 入力値に部分一致する店を検索
             const matches = shops.filter(shop =>
                 shop.name.includes(keyword)
             );
 
-            // サジェストボックスに候補を表示
-            matches.forEach(shop =>{
-                // 候補要素を作成
+            matches.forEach(shop => {
                 const div = document.createElement('div');
                 div.textContent = shop.name;
                 div.style.cursor = 'pointer';
-
-                // 候補クリック時の処理
                 div.onclick = function() {
-                    // 店名と詳細情報を入力欄にセット
                     shopInput.value = shop.name;
                     document.getElementById('genre').value = shop.genre;
                     document.getElementById('location').value = shop.location;
                     document.getElementById('rest').value = shop.rest;
                     document.getElementById('time').value = shop.time;
                     document.getElementById('tel').value = shop.tel;
-                    suggestionBox.innerHTML = ''; // サジェストをクリア
+                    suggestionBox.innerHTML = '';
                 };
-                // サジェストボックスに追加
                 suggestionBox.appendChild(div);
             });
         });
 
-            
-        // 写真プレビュー表示
-        function previewImage(event) {
-            const file = event.target.files[0];
-            const preview = document.getElementById('preview');
-            if (file) {
-                preview.src = URL.createObjectURL(file);
-                preview.style.display = 'block';
-            } else {
-                preview.style.display = 'none';
+        // 画像プレビュー（最大4枚）
+        function previewImages(event) {
+            const files = event.target.files;
+            const previewContainer = document.getElementById('preview-container');
+            previewContainer.innerHTML = '';
+
+            const maxFiles = 4;
+            const fileCount = Math.min(files.length, maxFiles);
+
+            previewContainer.className = '';
+            previewContainer.classList.add(`count-${fileCount}`);
+
+            for (let i = 0; i < fileCount; i++) {
+                const file = files[i];
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+
+            if (files.length > maxFiles) {
+                alert("最大4枚まで選択できます。");
             }
         }
     </script>
