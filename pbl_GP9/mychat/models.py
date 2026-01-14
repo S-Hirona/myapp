@@ -43,3 +43,7 @@ class Shop(models.Model):
 
     def __str__(self):
         return self.name
+
+class PostImage(models.Model): 
+    post = models.ForeignKey(Post, related_name='images', on_delete=models.CASCADE) 
+    image = models.ImageField(upload_to='photos/')
