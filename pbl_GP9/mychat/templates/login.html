@@ -1,30 +1,201 @@
 <!DOCTYPE html>
-<!--ログイン画面-->
-<html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>ログイン画面</title>
+{% load static %}
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>ログイン | 室蘭食べログ</title>
+
+<style>
+body{
+  margin:0;
+  font-family:"Hiragino Kaku Gothic ProN","メイリオ",sans-serif;
+  display:flex;
+  height:100vh;
+}
+
+/* 左側 */
+.left-panel{
+  width:35%;
+  background:#fbb36a;
+  color:white;
+  position:relative;
+  padding:40px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+
+.back-btn{
+  position:absolute;
+  top:20px;
+  left:20px;
+  font-size:32px;
+  text-decoration:none;
+  color:white;
+}
+.back-btn:active{
+  transform: translateY(2px) scale(0.95); 
+  color:#fffdd0; 
+}
+
+.left-title{
+  font-size:48px;
+  font-weight:900;
+  letter-spacing:0.1em;
+  margin:0;
+}
+
+/* 右側 */
+.right-panel{
+  width:65%;
+  padding:60px;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+}
+
+.form-box{
+  width:70%;
+  max-width:500px;
+}
+
+label{
+  display:block;
+  font-size:20px;
+  font-weight:600;
+  margin:20px 0 8px;
+}
+
+input{
+  width:100%;
+  height:50px;
+  border:2px solid #333;
+  border-radius:4px;
+  font-size:18px;
+  padding:0 10px;
+}
+
+.submit-btn{
+  margin-top:40px;
+  width:100%;
+  padding:15px 0;
+  background:black;
+  color:white;
+  border:none;
+  border-radius:25px;
+  font-size:20px;
+  font-weight:700;
+  cursor:pointer;
+  transition: all 0.2s ease; 
+  box-shadow: 0 5px 0 rgba(0,0,0,0.2);
+}
+.submit-btn:active{
+  transform: translateY(4px); 
+  box-shadow: 0 1px 0 rgba(0,0,0,0.2); 
+}
+/* =========================================
+   ページ遷移：右からスッとスライドイン
+   ========================================= */
+.page-slide-right {
+    animation: slideFromRight 0.45s cubic-bezier(.25,.8,.25,1);
+}
+
+@keyframes slideFromRight {
+    from {
+        opacity: 0;
+        transform: translateX(60px);
+    }
+    to {
+        opacity: 1;
+        transform: translateX(0);
+    }
+}
+
+/* 画面フェードアウトして遷移 */
+.page-fade-out {
+    animation: fadeOut 0.3s forwards;
+}
+
+@keyframes fadeOut {
+    to { opacity: 0; }
+}
+/* ============================
+   戻るボタン：左スライドアウト
+   ============================ */
+.page-slide-left {
+    animation: slideToLeft 0.45s cubic-bezier(.25,.8,.25,1) forwards;
+}
+
+@keyframes slideToLeft {
+    from {
+        opacity: 1;
+        transform: translateX(0);
+    }
+    to {
+        opacity: 0;
+        transform: translateX(-80px);
+    }
+}
+</style>
 </head>
-<body>
-    <h1>ログイン</h1>
+<body class="page-slide-right">
+<div class="left-panel">
+  <a href="{% url 'mychat:start' %}" class="back-btn">←</a>
+  <h1 class="left-title">ログイン</h1>
+</div>
+
+<div class="right-panel">
+  <div class="form-box">
 
     {% if error_messages %}
-        <ul>
-        {% for msg in error_messages %}
-            <li style="color:red">{{ msg }}</li>
+      <ul style="color:red;">
+        {% for err in error_messages %}
+          <li>{{ err }}</li>
         {% endfor %}
-        </ul>
+      </ul>
     {% endif %}
 
     <form method="post">
-        {% csrf_token %}
-        <label>ユーザ名: <input type="text" name="name" size="15"></label><br>
-        <label>パスワード: <input type="password" name="password" size="15"></label><br>
-        <input type="hidden" name="login" value="on">
-        <input type="submit" value="ログイン">
+      {% csrf_token %}
+
+      <!-- views.py と一致するよう修正 -->
+      <label>ユーザー名</label>
+      <input type="text" name="name">
+
+      <label>パスワード</label>
+      <input type="password" name="password">
+
+      <!-- ★ログインフラグ（必須） -->
+      <input type="hidden" name="login" value="on">
+
+      <button class="submit-btn">ログイン</button>
     </form>
 
-    <a href="{% url 'mychat:start' %}">戻る</a>
+  </div>
+</div>
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+
+    const backBtn = document.querySelector(".back-btn");
+    if (backBtn) {
+        backBtn.addEventListener("click", function(e) {
+            e.preventDefault();  // ← すぐ遷移しないようにする
+
+            document.body.classList.add("page-slide-left");  // ← 左へスライドアウト
+
+            // アニメーション後に遷移
+            setTimeout(() => {
+                window.location.href = backBtn.href;
+            }, 420); // アニメーション時間と合わせる
+        });
+    }
+
+});
+</script>
+
 </body>
 </html>
-
