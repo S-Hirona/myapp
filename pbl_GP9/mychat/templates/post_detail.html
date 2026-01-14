@@ -2,33 +2,170 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>投稿詳細</title>
+    <title>{{ post.shop_name }} の詳細</title>
+    <style>
+        body {
+            margin: 0;
+            background: #fafafa;
+            font-family: "Hiragino Kaku Gothic ProN", "メイリオ", sans-serif;
+        }
+
+        /* ==== ヘッダー ==== */
+        .header {
+            width: 100%;
+            padding: 15px 20px;
+            background: white;
+            border-bottom: 1px solid #ddd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 28px;
+            font-weight: 900;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+
+        .back-btn {
+            font-size: 28px;
+            color: #3897f0;
+            text-decoration: none;
+            margin-right: 15px;
+            transition: all 0.2s ease;
+        }
+        .back-btn:active {
+            transform: translateY(2px) scale(0.95);
+            color: #fffdd0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            padding-right: 30px;
+        }
+
+        .header-right a {
+            font-size: 24px;
+            text-decoration: none;
+            color: #3897f0;
+            transition: all 0.2s ease;
+        }
+        .header-right a:active {
+            transform: translateY(2px) scale(0.95);
+            color: #fffdd0;
+        }
+
+        .container {
+            padding: 20px;
+        }
+
+        .image-grid {
+            display: grid;
+            gap: 10px;
+            margin: 15px 0 25px;
+        }
+
+        .image-grid.count-1 {
+            grid-template-columns: 1fr;
+        }
+
+        .image-grid.count-2 {
+            grid-template-columns: 1fr 1fr;
+        }
+
+        .image-grid.count-3 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+        }
+        .image-grid.count-3 img:nth-child(1) {
+            grid-column: 1 / span 2;
+        }
+
+        .image-grid.count-4 {
+            grid-template-columns: 1fr 1fr;
+            grid-template-rows: auto auto;
+        }
+
+        .image-grid img {
+            width: 100%;
+            height: auto;
+            border-radius: 8px;
+            object-fit: cover;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        .info-block {
+            background: #fff;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 15px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+        }
+
+        p {
+            font-size: 16px;
+            margin: 6px 0;
+        }
+
+        a {
+            color: #3897f0;
+            text-decoration: none;
+            font-weight: bold;
+        }
+    </style>
 </head>
 <body>
 
-<h1>{{ post.shop_name }} の詳細</h1>
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="header-left">
+            <a href="{% url 'mychat:list' %}" class="back-btn">←</a>
+            <div>{{ post.shop_name }} の詳細</div>
+        </div>
+        <div class="header-right">
+            <a href="{% url 'mychat:main' %}">🏠</a>
+            <a href="{% url 'mychat:write' %}">➕</a>
+        </div>
+    </div>
 
-<p><strong>ジャンル：</strong> {{ post.genre }}</p>
-<p><strong>場所：</strong> {{ post.location }}</p>
-<p><strong>感想：</strong> {{ post.menu }}</p>
+    <!-- 本文 -->
+    <div class="container">
 
-{% if post.photo %}
-    <p><img src="{{ post.photo.url }}" width="300"></p>
-{% endif %}
+        {% if post.images.all %}
+            {% with post.images.all|length as image_count %}
+                <div class="image-grid count-{{ image_count }}">
+                    {% for image in post.images.all|slice:":4" %}
+                        <img src="{{ image.image.url }}" alt="投稿画像">
+                    {% endfor %}
+                </div>
+            {% endwith %}
+        {% elif post.photo %}
+            <p><img src="{{ post.photo.url }}" width="300"></p>
+        {% endif %}
 
-<p><strong>投稿者：</strong> {{ post.user }}</p>
-<p><strong>投稿日：</strong> {{ post.created }}</p>
+        <div class="info-block">
+            <p><strong>ジャンル：</strong> {{ post.genre }}</p>
+            <p><strong>場所：</strong> {{ post.location }}</p>
+            <p><strong>感想：</strong> {{ post.menu }}</p>
+            <p><strong>投稿者：</strong> {{ post.user }}</p>
+            <p><strong>投稿日：</strong> {{ post.created }}</p>
 
-<!-- 店の詳細ページへのリンク -->
-{% if shop %}
-    <a href="{% url 'mychat:shop_detail' shop.id %}">
-        {{ post.shop_name }}
-    </a>
-{% else %}
-    {{ post.shop_name }}
-{% endif %}
+            {% if shop %}
+                <p><a href="{% url 'mychat:shop_detail' shop.id %}">▶ {{ post.shop_name }} の店舗情報を見る</a></p>
+            
+            {% comment %} {% else %} 
+                <p>{{ post.shop_name }}</p> {% endcomment %}
+            {% endif %}
+            
+        </div>
 
-<p><a href="{% url 'mychat:list' %}">一覧に戻る</a></p>
+    </div>
 
 </body>
 </html>
