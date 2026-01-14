@@ -1,12 +1,145 @@
-<!DOCTYPE html>
-<html>
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>食べログ</title>
+{% load static %}
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>室蘭 食べログ - Top</title>
+
+<style>
+html,body{
+  margin:0;
+  padding:0;
+  font-family:"Hiragino Kaku Gothic ProN","メイリオ",sans-serif;
+}
+
+/* ========= HERO（背景スライドショー） ========= */
+.hero{
+  position:relative;
+  height:100vh;
+  overflow:hidden;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+}
+
+/* ★★★ 黒グラデーション（上下）追加 ★★★ */
+.hero::before{
+  content:"";
+  position:absolute;
+  inset:0;
+  z-index:0;
+
+  /* 画像の上にグラデーションを重ねる */
+  background:
+    linear-gradient(to bottom, rgba(0,0,0,0.6), rgba(0,0,0,0) 20%, rgba(0,0,0,0) 80%, rgba(0,0,0,0.6)),
+    var(--bg-url);
+
+  background-size:cover;
+  background-position:center;
+  background-repeat:no-repeat;
+}
+
+/* 黒レイヤー（文字を見やすくする） */
+.hero::after{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:rgba(0,0,0,0.35);
+  z-index:1;
+}
+
+/* ========= ログインUI（右上） ========= */
+.menu{
+  position:absolute;
+  top:30px;
+  right:30px;
+  text-align:right;
+  z-index:10;
+}
+.insta-link{
+  display:block;
+  margin-bottom:10px;
+  color:white;
+  font-size:18px;
+  font-weight:600;
+  text-decoration:none;
+  opacity:0.9;
+  transition:0.2s;
+}
+.insta-link:hover{
+  filter: brightness(0.8);
+  transform: translateY(2px);
+}
+
+/* ========= タイトル ========= */
+.title{
+  position:relative;
+  z-index:5;
+  font-weight:900;
+  font-size:clamp(48px,7vw,100px);
+  letter-spacing:0.08em;
+  color:white;
+  text-shadow:
+    0 3px 6px rgba(0,0,0,0.55),
+    0 8px 16px rgba(0,0,0,0.5);
+  margin-bottom:20px;
+}
+
+/* ========= サブタイトル ========= */
+.subtitle{
+  position:relative;
+  z-index:5;
+  font-size:clamp(18px,3vw,32px);
+  color:white;
+  font-weight:600;
+  text-shadow:0 3px 6px rgba(0,0,0,0.4);
+}
+
+</style>
 </head>
+
 <body>
-  <h1>食べログ</h1>
-  <p><a href="{% url 'mychat:signup' %}">新規登録</a></p>
-  <p><a href="{% url 'mychat:login' %}">ログイン</a></p>
+
+<div class="hero">
+
+  <div class="menu"> 
+    <a href="{% url 'mychat:login' %}" class="insta-link">ログイン</a>
+    <a href="{% url 'mychat:signup' %}" class="insta-link">ユーザー登録</a>
+  </div>
+
+  <div class="title">室蘭 食べログ</div>
+  <div class="subtitle">室蘭のうまい店、ぜんぶここに。</div>
+
+</div>
+
+<script>
+const bgImages = [
+  "{% static 'mychat/33658040_s.jpg' %}",
+  "{% static 'mychat/food2.jpg' %}",
+  "{% static 'mychat/hannba-gu.jpg' %}",
+  "{% static 'mychat/33387965_s.jpg' %}",
+  "{% static 'mychat/33465212_s.jpg' %}",
+];
+
+let bgIndex = 0;
+const hero = document.querySelector('.hero');
+
+/* 初期画像設定 */
+updateBg();
+
+/* 8秒ごとに画像を切り替え */
+setInterval(()=>{
+  bgIndex = (bgIndex + 1) % bgImages.length;
+  updateBg();
+}, 8000);
+
+function updateBg(){
+  hero.style.setProperty('--bg-url', `url('${bgImages[bgIndex]}')`);
+}
+</script>
+
 </body>
 </html>
