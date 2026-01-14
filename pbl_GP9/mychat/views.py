@@ -135,11 +135,21 @@ def main(request):
     
     return render(request, 'main.html')
 
+
 def mapView(request):
     return render(request, 'map.html')
 
+
+#新着投稿を表示する処理
 def recomView(request):
-    return render(request, 'recom.html')
+    #新着投稿を8件取得
+    posts = Post.objects.order_by('-created')[:8]
+    #最後に投稿されたのはいつか
+    latest_post = Post.objects.order_by('-created').first()
+    return render(request, 'recom.html', {
+        'posts': posts,
+        'latest_post': latest_post,
+    })
 
 #検索機能の実装
 def searchView(request):
@@ -219,7 +229,12 @@ def writeView(request):
 
 # 投稿一覧表示用画面
 def postListView(request):
-    posts = Post.objects.order_by('-created')  # 新しい順に並べる
+    user_name = request.COOKIES.get('USER')
+    if not user_name:
+        posts = Post.objects.none()
+    else:
+        posts = Post.objects.filter(user__name=user_name).order_by('-created')
+
     return render(request, 'post_list.html', {"posts": posts})
 
 
@@ -239,6 +254,12 @@ def shopDetailView(request, shop_id):
     # 店の詳細情報を取得
     shop = Shop.objects.get(id=shop_id)
 
-    return render(request, 'shop_detail.html', {
+    posts = Post.objects.filter(shop_name=shop.name).order_by('-created')
+
+    back_to = request.GET.get("from", "main")
+
+    return render(request, "shop_detail.html", {
         "shop": shop,
+        "posts": posts,
+        "back_to": back_to,
     })

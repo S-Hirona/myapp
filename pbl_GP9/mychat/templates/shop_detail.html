@@ -2,19 +2,56 @@
 <html>
 <head>
     <meta charset="UTF-8">
-    <title>{{ shop.name }}</title>
+    <title>{{ shop.name }}｜店の詳細</title>
 </head>
 <body>
 
 <h1>{{ shop.name }}</h1>
 
-<p><strong>ジャンル：</strong> {{ shop.genre }}</p>
-<p><strong>場所：</strong> {{ shop.location }}</p>
-<p><strong>定休日：</strong> {{ shop.rest }}</p>
-<p><strong>営業時間：</strong> {{ shop.time }}</p>
-<p><strong>電話番号：</strong> {{ shop.tel }}</p>
+<hr>
 
-<p><a href="{% url 'mychat:main' %}">戻る</a></p>
+<h2>店の情報</h2>
+<p><strong>ジャンル：</strong>{{ shop.genre }}</p>
+<p><strong>場所：</strong>{{ shop.location }}</p>
+<p><strong>定休日：</strong>{{ shop.rest }}</p>
+<p><strong>営業時間：</strong>{{ shop.time }}</p>
+<p><strong>電話番号：</strong>{{ shop.tel }}</p>
+
+<hr>
+
+<h2>この店の投稿</h2>
+
+{% if posts %}
+    {% for post in posts %}
+        <div style="margin-bottom: 20px;">
+            {% if post.photo %}
+                <img src="{{ post.photo.url }}" width="200">
+            {% endif %}
+            <p><strong>感想：</strong>{{ post.menu }}</p>
+            <p><small>投稿日：{{ post.created }}</small></p>
+
+            <a href="{% url 'mychat:detail' post.id %}?from=shop">
+                投稿の詳細を見る
+            </a>
+        </div>
+        <hr>
+    {% endfor %}
+{% else %}
+    <p>この店の投稿はまだありません。</p>
+{% endif %}
+
+<hr>
+
+<!-- 戻るボタン -->
+{% if back_to == "recom" %}
+    <a href="{% url 'mychat:recom' %}">戻る</a>
+{% elif back_to == "search" %}
+    <a href="{% url 'mychat:search' %}">戻る</a>
+{% elif back_to == "list" %}
+    <a href="{% url 'mychat:list' %}">戻る</a>
+{% else %}
+    <a href="{% url 'mychat:main' %}">戻る</a>
+{% endif %}
 
 </body>
 </html>
