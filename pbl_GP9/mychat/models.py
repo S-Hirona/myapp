@@ -24,7 +24,7 @@ class Post(models.Model):
     shop_name = models.CharField(max_length=100)
     genre = models.CharField(max_length=100)
     location = models.CharField(max_length=200, blank=True)
-    photo = models.ImageField(upload_to='photos/', blank=True, null=True)
+    #photo = models.ImageField(upload_to='photos/', blank=True, null=True)
     menu = models.CharField(max_length=200, blank=True)
     created = models.DateTimeField(auto_now_add=True)
 
@@ -43,3 +43,9 @@ class Shop(models.Model):
 
     def __str__(self):
         return self.name
+
+## 追加
+class PostImage(models.Model): 
+    post = models.ForeignKey(Post, related_name='images', on_delete=models.CASCADE) 
+    image = models.ImageField(upload_to='photos/')
+##
