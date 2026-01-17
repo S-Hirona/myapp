@@ -11,6 +11,13 @@ def startView(request):
     return render(request, "start.html")
 
 #新規登録処理
+from django.shortcuts import render, redirect
+from .models import User, Room
+import urllib.parse
+
+def start(request):
+    return render(request, "start.html")
+
 def createUser(request):
     error_messages = []
 
@@ -40,14 +47,18 @@ def createUser(request):
         "error_messages": error_messages
     })
 
-
 # ログイン処理
 def loginView(request):
     # エラーメッセージ用リスト
     error_messages = []
 
+
     # すでにログイン済みならmainへリダイレクト
     cookie_user_id = request.COOKIES.get('USER')
+
+    # すでにログイン済みなら main へ（Cookie: USER_ID）
+    cookie_user_id = request.COOKIES.get('USER_ID')
+
     if cookie_user_id:
         try:
             user_obj = User.objects.get(id=int(cookie_user_id))
@@ -56,11 +67,18 @@ def loginView(request):
         except (User.DoesNotExist, ValueError):
             pass
 
+
     #ログイン画面表示
     if request.method != "POST":
         return render(request, "login.html")
 
     #入力チェック(ユーザ名、パスワードの取得)
+
+    # GETはログイン画面
+    if request.method != "POST":
+        return render(request, "login.html")
+
+
     # POST（ログイン処理）
     user_name = request.POST.get('name', '').strip()
     password = request.POST.get('password', '').strip()
@@ -84,8 +102,12 @@ def loginView(request):
     user_obj.save()
 
     response = redirect('mychat:main')
+
     #Cookieにユーザを保存
     response.set_cookie('USER', str(user_obj.id))  # 日本語名でもOK
+
+    response.set_cookie('USER_ID', str(user_obj.id))  # 日本語名でもOK
+
     return response
 
 
