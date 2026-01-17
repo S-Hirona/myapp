@@ -11,10 +11,6 @@ def startView(request):
     return render(request, "start.html")
 
 #新規登録処理
-from django.shortcuts import render, redirect
-from .models import User, Room
-import urllib.parse
-
 def start(request):
     return render(request, "start.html")
 
