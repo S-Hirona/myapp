@@ -19,4 +19,6 @@ urlpatterns = [
     path('list/', views.postListView, name='list'),
     path('detail/<int:post_id>/', views.postDetailView, name='detail'),
     path('shop/<int:shop_id>/',views.shopDetailView, name='shop_detail'),
+    path("logout/", views.logout_view, name="logout"),#ログアウト用に追加
+    path('delete/int<int:post_id>/', views.postDeleteView, name='delete'),
 ]

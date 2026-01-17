@@ -1,14 +1,16 @@
 from django.shortcuts import render, redirect
-from .models import User, Room,Post,Shop
+from .models import User,Post,Shop
 #検索用にモジュール追加
 from django.db.models import Q
-
+import requests
+#ログアウト用にモジュール追加
+import time
+import re
 
 def startView(request):
-    return render(request, 'start.html')
+    return render(request, "start.html")
 
-
-#ユーザ登録処理
+#新規登録処理
 def createUser(request):
     error_messages = []
 
@@ -17,15 +19,13 @@ def createUser(request):
         password = request.POST.get("password", "").strip()
         password_confirm = request.POST.get("password_confirm", "").strip()
 
-        # 入力
         if not name:
             error_messages.append("ユーザ名が未記入です。")
         if not password:
             error_messages.append("パスワードが未記入です。")
         if password != password_confirm:
-            error_messages.append("パスワードが一致しません。")  # 再入力
+            error_messages.append("パスワードが一致しません。")
 
-        # ユーザ登録処理
         if not error_messages:
             try:
                 existing_user = User.objects.get(name=name)
@@ -33,72 +33,59 @@ def createUser(request):
             except User.DoesNotExist:
                 new_user = User(name=name, password=password)
                 new_user.save()
-                return redirect('mychat:start')
+                # redirect はテンプレート名ではなくURL名
+                return redirect('mychat:login')
 
-    # エラーがあれば同じ登録画面に戻す
-    context = {
-        "error_messages": error_messages,
-    }
-    return render(request, "signup.html", context)
+    return render(request, "signup.html", {
+        "error_messages": error_messages
+    })
 
 
-#ログイン投稿処理
+# ログイン処理
 def loginView(request):
+    # エラーメッセージ用リスト
     error_messages = []
 
-    #クッキーからユーザ名を取得
-    cookie_user = request.COOKIES.get('USER')
-    if cookie_user:
+    # すでにログイン済みならmainへリダイレクト
+    cookie_user_id = request.COOKIES.get('USER')
+    if cookie_user_id:
         try:
-            user_obj = User.objects.get(name=cookie_user)
+            user_obj = User.objects.get(id=int(cookie_user_id))
             if user_obj.islogin:
-                #   ログイン中ならメイン画面へ
-                response = redirect('mychat:main')
-                return response
-            else:
-                #   ログイン状態 False の場合クッキー削除
-                response = redirect('mychat:login')
-                response.delete_cookie('USER')
-                return response
-        except User.DoesNotExist:
-            response = redirect('mychat:login')
-            response.delete_cookie('USER')
-            return response
+                return redirect('mychat:main')
+        except (User.DoesNotExist, ValueError):
+            pass
 
-    #フォームデータ取得
-    user_name = request.POST.get('name', '').strip()
-    password = request.POST.get('password', '').strip()
-    login_flag = request.POST.get('login', 'off')
-
-    #ログインフラグが on でない場合、ログイン画面に戻る
-    if login_flag != "on":
+    #ログイン画面表示
+    if request.method != "POST":
         return render(request, "login.html")
 
-    #入力チェック
-    if not user_name:
-        error_messages.append("ユーザ名が入力されていません")
-    if not password:
-        error_messages.append("パスワードが入力されていません")
+    #入力チェック(ユーザ名、パスワードの取得)
+    # POST（ログイン処理）
+    user_name = request.POST.get('name', '').strip()
+    password = request.POST.get('password', '').strip()
 
-    #入力エラーがある場合
+    if not user_name:
+        error_messages.append("ユーザ名が入力されていません。")
+    if not password:
+        error_messages.append("パスワードが入力されていません。")
     if error_messages:
         return render(request, "login.html", {'error_messages': error_messages})
 
-    #データベースから一致するユーザ情報を取得
+    #ユーザ認証(一致するユーザがいるか確認)
     try:
         user_obj = User.objects.get(name=user_name, password=password)
     except User.DoesNotExist:
-        #一致しない場合
-        error_messages.append("ユーザ名、パスワードが一致しません")
+        error_messages.append("ユーザ名またはパスワードが違います。")
         return render(request, "login.html", {'error_messages': error_messages})
 
-    #ログイン状態を True に更新
+    #ログイン成功時の処理
     user_obj.islogin = True
     user_obj.save()
 
-    #クッキーにユーザ名を設定してメイン画面へ
     response = redirect('mychat:main')
-    response.set_cookie('USER', user_name)
+    #Cookieにユーザを保存
+    response.set_cookie('USER', str(user_obj.id))  # 日本語名でもOK
     return response
 
 
@@ -186,8 +173,9 @@ def searchView(request):
 def postView(request):
     return render(request, 'post.html')
 
-#
+#投稿作成処理
 def resultView(request):
+    #フォームの内容を取得
     if request.method == "POST":
         shop_name = request.POST.get('shop_name')
         genre = request.POST.get('genre')
@@ -195,9 +183,17 @@ def resultView(request):
         photo = request.FILES.get('photo')
         menu = request.POST.get('menu')
 
+    #ログインユーザを取得
         user_name = request.COOKIES.get('USER')
-        user_obj = User.objects.filter(name=user_name).first() if user_name else None
-
+        if not user_name:
+            return redirect('mychat:login')
+        
+    #データベースから名前が一致するユーザを取得
+        try:
+            user_obj = User.objects.get(id=int(user_name))
+        except User.DoesNotExist:
+            return redirect('mychat:login')
+    #投稿を作成して保存
         Post.objects.create(
             user=user_obj,
             shop_name=shop_name,
@@ -229,14 +225,26 @@ def writeView(request):
 
 # 投稿一覧表示用画面
 def postListView(request):
+    # Cookieからユーザ名を取得
     user_name = request.COOKIES.get('USER')
+
     if not user_name:
         posts = Post.objects.none()
+        user_name = None
     else:
-        posts = Post.objects.filter(user__name=user_name).order_by('-created')
-
-    return render(request, 'post_list.html', {"posts": posts})
-
+        #ユーザ名に紐づく投稿を取得
+        try:
+            user_obj = User.objects.get(id=int(user_name))
+            posts = Post.objects.filter(user=user_obj).order_by('-created')
+            user_name = user_obj.name
+        except User.DoesNotExist:
+            posts = Post.objects.none()
+            user_name = None
+    # 投稿一覧を表示
+    return render(request, 'post_list.html', {
+        "posts": posts,
+        "user_name": user_name,
+    })
 
 # 投稿された投稿の詳細を表示する
 def postDetailView(request, post_id):
@@ -263,3 +271,97 @@ def shopDetailView(request, shop_id):
         "posts": posts,
         "back_to": back_to,
     })
+
+#以下、1/14以降の追加分
+#地図機能のための関数
+def normalize_address(s: str) -> str:
+    if not s:
+        return s
+    # 全角数字→半角
+    s = s.translate(str.maketrans("０１２３４５６７８９", "0123456789"))
+    # 全角/特殊ハイフン→半角ハイフン
+    s = s.replace("−", "-").replace("ー", "-").replace("―", "-").replace("–", "-")
+    # 全角スペース→半角、余分な空白を整理
+    s = s.replace("　", " ")
+    s = re.sub(r"\s+", " ", s).strip()
+    return s
+
+def geocode_address(address: str):
+    """
+    OpenStreetMap Nominatimで住所 -> (lat, lng)
+    失敗したら (None, None)
+    """
+    if not address or not address.strip():
+        return None, None
+
+    base = "https://nominatim.openstreetmap.org/search"
+
+    # 住所の表記ゆれを潰す
+    normalized = normalize_address(address)
+
+    # 失敗しやすいので、複数パターンで試す（上から順に）
+    queries = []
+    queries.append(normalized)
+    if not normalized.startswith("日本"):
+        queries.append("日本 " + normalized)
+    # 町丁目の「丁目」を落としてみる（検索が通ることがある）
+    queries.append(normalized.replace("丁目", ""))
+    # ハイフンをスペースに（番地の解釈が変わることがある）
+    queries.append(normalized.replace("-", " "))
+
+    headers = {
+        # NominatimはUser-Agent必須
+        "User-Agent": "muroran-tabelog/1.0",
+    }
+
+    for q in queries:
+        # 叩きすぎ防止（最低1秒）
+        time.sleep(1.0)
+
+        params = {
+            "format": "json",
+            "q": q,
+            "limit": 1,
+            "countrycodes": "jp",        # 日本に絞る
+            "accept-language": "ja",     # 日本語優先
+        }
+
+        try:
+            r = requests.get(base, params=params, headers=headers, timeout=10)
+            r.raise_for_status()
+            data = r.json()
+            if data:
+                lat = float(data[0]["lat"])
+                lng = float(data[0]["lon"])
+                return lat, lng
+        except Exception:
+            # 例外は次の候補へ（本番ではログ出してもOK）
+            continue
+
+    return None, None
+
+#ログアウト処理
+def logout_view(request):
+    #COOKIEからユーザ名を取得
+    username = request.COOKIES.get("USER")
+    if username:
+        try:
+            user = User.objects.get(name=username)
+            user.islogin = False
+            user.save()
+        except User.DoesNotExist:
+            pass
+    #レスポンスを作成し、COOKIEを削除
+    response = redirect("mychat:start")
+    response.delete_cookie("USER")
+    return response
+
+#投稿削除処理
+def postDeleteView(request, post_id):
+    #削除する投稿を取得
+    try:
+        post = Post.objects.get(id=post_id)
+        post.delete()
+    except Post.DoesNotExist:
+        pass
+    return redirect('mychat:list')

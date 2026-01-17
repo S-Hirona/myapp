@@ -19,6 +19,11 @@
 <p><strong>投稿者：</strong> {{ post.user }}</p>
 <p><strong>投稿日：</strong> {{ post.created }}</p>
 
+<form action="{% url 'mychat:delete' post.id %}" method="post">
+    {% csrf_token %}
+    <button type="submit">この投稿を削除</button>
+</form>
+
 <!-- 店の詳細ページへのリンク -->
 {% if shop %}
     <a href="{% url 'mychat:shop_detail' shop.id %}">

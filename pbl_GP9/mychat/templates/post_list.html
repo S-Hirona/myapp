@@ -5,6 +5,11 @@
     <meta charset="UTF-8">
     <title>投稿一覧</title>
 
+    {% if user_name %}
+    <p>ログイン中のユーザ：<b>{{ user_name }}</b></p>
+    {% else %}
+        <p>ログインしていません</p>
+    {% endif %}
 <style>
 /* ==== ヘッダー ==== */
 .header {

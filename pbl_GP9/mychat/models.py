@@ -1,18 +1,11 @@
 from django.db import models
 from django.contrib.auth.models import User
 
-class Room(models.Model):
-    name = models.CharField(max_length=255)
-
-    def __str__(self):
-        return self.name
-
 #ユーザのクラス
 class User(models.Model):
     name = models.CharField(max_length=20)
     password = models.CharField(max_length=20)
     islogin = models.BooleanField(default=False)
-    room = models.ForeignKey(Room, on_delete=models.CASCADE, null=True, blank=True)
 
     def __str__(self):
         return self.name
@@ -40,6 +33,13 @@ class Shop(models.Model):
     rest = models.CharField(max_length=100, blank=True, default="")
     time = models.CharField(max_length=100, blank=True, default="")
     tel = models.CharField(max_length=100, blank=True, default="")
-
+#地図用の緯度と経度
+    lat = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
+    lng = models.DecimalField(max_digits=10, decimal_places=7, null=True, blank=True)
     def __str__(self):
         return self.name
+    
+#投稿画像のクラス??
+class PostImage(models.Model): 
+    post = models.ForeignKey(Post, related_name='images', on_delete=models.CASCADE) 
+    image = models.ImageField(upload_to='photos/')
