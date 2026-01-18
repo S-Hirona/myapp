@@ -1,5 +1,5 @@
 from django.shortcuts import render, redirect
-from .models import User,Post,Shop
+from .models import User, Post, Shop, PostImage  ## 追加：PostImage をインポート
 #検索用にモジュール追加
 from django.db.models import Q
 import requests
@@ -173,7 +173,7 @@ def searchView(request):
         conditions = Q()
         #キーワードごとに条件に合致する店を創作
         for word in keyword:
-            conditions |=(
+            conditions |=( 
             Q(shop_name__icontains=word) |
             Q(genre__icontains=word) |
             Q(location__icontains=word) |
@@ -191,35 +191,41 @@ def searchView(request):
 def postView(request):
     return render(request, 'post.html')
 
-#投稿作成処理
+#投稿作成処理（画像最大4枚まで対応）
 def resultView(request):
     #フォームの内容を取得
     if request.method == "POST":
         shop_name = request.POST.get('shop_name')
         genre = request.POST.get('genre')
         location = request.POST.get('location', '')
-        photo = request.FILES.get('photo')
         menu = request.POST.get('menu')
 
-    #ログインユーザを取得
+        #ログインユーザを取得
         user_name = request.COOKIES.get('USER')
         if not user_name:
             return redirect('mychat:login')
         
-    #データベースから名前が一致するユーザを取得
+        #データベースから名前が一致するユーザを取得
         try:
             user_obj = User.objects.get(id=int(user_name))
         except User.DoesNotExist:
             return redirect('mychat:login')
-    #投稿を作成して保存
-        Post.objects.create(
+
+        #投稿を作成して保存
+        post = Post.objects.create(
             user=user_obj,
             shop_name=shop_name,
             genre=genre,
             location=location,
-            photo=photo,
             menu=menu,
         )
+
+        ## 画像を最大4枚まで保存
+        images = request.FILES.getlist('photo')
+        for i, image in enumerate(images):
+            if i >= 4:
+                break
+            PostImage.objects.create(post=post, image=image)
 
         return redirect('mychat:list')
 
