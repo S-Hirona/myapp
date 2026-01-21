@@ -4,12 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <title>新着投稿</title>
-    {% if latest_post %}
-    <p style="color: gray;">
-        最終投稿日時：{{ latest_post.created|date:"Y年m月d日 H:i" }}
-    </p>
-    {% endif %}
-    <style>
+
+<style>
 /* ==== ヘッダー ==== */
 .header {
     width: 100%;
@@ -17,7 +13,7 @@
     background: white;
     border-bottom: 1px solid #ddd;
     display: flex;
-    justify-content: space-between; /* 左右に分ける */
+    justify-content: space-between;
     align-items: center;
     font-size: 28px;
     font-weight: 900;
@@ -26,13 +22,11 @@
     z-index: 10;
 }
 
-/* 左側（戻る矢印＋タイトル） */
 .header-left {
     display: flex;
     align-items: center;
 }
 
-/* 戻るボタン（矢印のみ） */
 .back-btn {
     font-size: 28px;
     color: #3897f0;
@@ -44,26 +38,25 @@
     transform: translateY(2px) scale(0.95);
     color: #fffdd0;
 }
+
 /* 右側アイコン */
 .header-right {
     display: flex;
     align-items: center;
-    gap: 15px;              /* アイコン同士の間隔 */
-    padding-right: 30px;    /* 右端に余白を追加 */
+    gap: 15px;
+    padding-right: 30px;
+    position: relative;
 }
 
-.header-right a {
-    font-size: 24px;        /* 少し小さめにして見切れ防止 */
+.header-right a,
+.user-icon {
+    font-size: 24px;
     text-decoration: none;
     color: #3897f0;
-    transition: all 0.2s ease;
-}
-.header-right a:active {
-    transform: translateY(2px) scale(0.95);
-    color: #fffdd0;
+    cursor: pointer;
 }
 
-
+/* ===== 基本 ===== */
 body {
     margin: 0;
     background: #fafafa;
@@ -78,29 +71,35 @@ ul {
 }
 li {
     border-bottom: 1px solid #ddd;
-    padding: 20px 20px 60px; 
+    padding: 20px 20px 60px;
     position: relative;
 }
 
-/* 投稿アイテムを横並びに */
+/* 投稿本体 */
 .post-item {
     display: flex;
     align-items: flex-start;
     gap: 20px;
 }
 
-/* 画像を左側に大きく */
-.post-item img {
+/* ==== 画像4枚対応 ==== */
+.post-item .image-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px;
     width: 350px;
-    height: auto;
+}
+
+.post-item img {
+    width: 100%;
+    height: 100%;
     border-radius: 8px;
     object-fit: cover;
 }
 
-/* テキスト情報を中央に */
+/* 投稿情報 */
 .post-info {
     flex: 1;
-    min-width: 0;
 }
 .post-info h3 {
     margin: 0 0 8px;
@@ -109,10 +108,9 @@ li {
 .post-info p {
     margin: 6px 0;
     font-size: 18px;
-    color: #333;
 }
 
-/* 詳細ボタンを右下に固定配置 */
+/* 詳細ボタン */
 .post-action {
     position: absolute;
     right: 20px;
@@ -126,51 +124,119 @@ li {
     background: linear-gradient(45deg, #feda75, #fa7e1e, #d62976, #962fbf, #4f5bd5);
     color: white;
     font-weight: bold;
-    cursor: pointer;
-    transition: all 0.15s ease;
-    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
 }
-.post-action button:hover {
-    opacity: 0.9;
+
+/* ==== ユーザー吹き出し ==== */
+.user-wrapper {
+    position: relative;
 }
-.post-action button:active {
-    transform: translateY(3px) scale(0.97);
-    box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+
+.user-bubble {
+    display: none;
+    position: absolute;
+    top: 40px;
+    right: 0;
+    background: white;
+    border: 1px solid #ddd;
+    border-radius: 10px;
+    padding: 10px 14px;
+    font-size: 14px;
+    color: #333;
+    white-space: nowrap;
+    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    z-index: 20;
 }
+
+/* 吹き出しの三角 */
+.user-bubble::before {
+    content: "";
+    position: absolute;
+    top: -8px;
+    right: 10px;
+    border-width: 0 8px 8px 8px;
+    border-style: solid;
+    border-color: transparent transparent white transparent;
+}
+
+/* hoverで表示 */
+.user-wrapper:hover .user-bubble {
+    display: block;
+}
+
+
 </style>
 </head>
+
 <body>
-    <h1>新着</h1>
-<!--投稿表示欄-->
-    {% if posts %}
-    <ul>
-        {% for post in posts %}
-            <li>
-                <div class="post-item">
-                    {% if post.photo %}
-                        <img src="{{ post.photo.url }}" alt="投稿画像">
+<body>
+    <div class="header">
+        <div class="header-left">
+            <a href="{% url 'mychat:main' %}" class="back-btn">←</a>
+            <div>新規投稿</div>
+        </div>
+
+        <div class="header-right">
+            <!-- 🏠 -->
+            <a href="{% url 'mychat:main' %}">🏠</a>
+
+            <!-- ➕ -->
+            <a href="{% url 'mychat:write' %}">➕</a>
+
+            <!-- 👤 -->
+            <div class="user-wrapper">
+                <span class="user-icon">👤</span>
+                <div class="user-bubble">
+                    {% if user_name %}
+                        ログイン中：<b>{{ user_name }}</b>
+                    {% else %}
+                        ログインしていません
                     {% endif %}
-                    <div class="post-info">
-                        <h3>{{ post.shop_name }}（{{ post.genre }}）</h3>
-                        <p><b>場所：</b>{{ post.location }}</p>
-                        <p><b>感想：</b>{{ post.menu }}</p>
-                        <p><b>投稿日：</b>{{ post.created }}</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    {% if latest_post %}
+    <p style="color: gray;">
+        最終投稿日時：{{ latest_post.created|date:"Y年m月d日 H:i" }}
+    </p>
+    {% endif %}
+
+    <!-- 投稿表示欄 -->
+    {% if posts %}
+        <ul>
+            {% for post in posts %}
+                <li>
+                    <div class="post-item">
+
+                        <!-- ★ 画像：最大4枚 -->
+                        {% if post.images.all %}
+                            <div class="image-grid">
+                                {% for image in post.images.all|slice:":4" %}
+                                    <img src="{{ image.image.url }}">
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+
+                        <div class="post-info">
+                            <h3>{{ post.shop_name }}（{{ post.genre }}）</h3>
+                            <p><b>場所：</b>{{ post.location }}</p>
+                            <p><b>感想：</b>{{ post.menu }}</p>
+                            <p><b>投稿日：</b>{{ post.created }}</p>
+                        </div>
                     </div>
-                </div>
-                <div class="post-action">
-                    <form action="{% url 'mychat:detail' post.id %}" method="get">
-                        <button type="submit">詳細を見る</button>
-                    </form>
-                </div>
-            </li>
-        {% endfor %}
-    </ul>
-{% else %}
-    <p style="padding: 20px;">まだ投稿がありません</p>
-{% endif %}
 
-    <p><a href="{% url 'mychat:result' %}?from=recom">投稿</a></p>
+                    <div class="post-action">
+                        <form action="{% url 'mychat:detail' post.id %}" method="get">
+                            <button type="submit">詳細を見る</button>
+                        </form>
+                    </div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <p style="padding: 20px;">まだ投稿がありません</p>
+    {% endif %}
 
-    <p><a href="{% url 'mychat:main' %}">戻る</a></p>
 </body>
 </html>
